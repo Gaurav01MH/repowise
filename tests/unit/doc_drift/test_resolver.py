@@ -599,3 +599,21 @@ def test_probe_is_asked_only_about_would_be_misses():
     resolve(idx, _ref("src/app.py"))
     resolve(idx, _ref("CLAUDE.md"))
     assert asked == []
+
+
+def test_a_dot_inside_a_foreign_repository_name_does_not_end_the_sentence():
+    context = "In the acme/scanner.js repo, `src/lint.py` does the rest."
+    res = resolve(_index(), _sentence_ref(context, "src/lint.py"))
+    assert res.verdict is DriftVerdict.UNCHECKABLE
+    assert res.detail == "other-repository"
+
+
+def test_a_foreign_repository_qualifier_on_the_previous_line_is_kept():
+    refs = extract(
+        "In the acme/scanner.js repo,\nsee `src/lint.py` for the implementation.\n",
+        "docs/guide.md",
+    )
+    ref = next(r for r in refs if r.raw == "src/lint.py")
+    res = resolve(_index(), ref)
+    assert res.verdict is DriftVerdict.UNCHECKABLE
+    assert res.detail == "other-repository"
